@@ -10,7 +10,7 @@ st.set_page_config(
 
 # Application title
 st.title("AI Interview Assistant")
-st.caption("It is a platform for interview preparation and learning.")
+st.caption("It is a platform for getting information")
 
 # API configuration
 try:
@@ -18,28 +18,28 @@ try:
         api_key=st.secrets["GROQ_API_KEY"]
     )
 except (KeyError, FileNotFoundError):
-    st.error("API Key is missing. Add it in Streamlit Secrets.")
+    st.error("API Key is missing. Add it in Advanced Settings.")
     st.stop()
 
-# Job role selection
+# Job title
 role = st.selectbox(
     "JOB TITLE",
     [
-        "Software Engineer",
-        "Senior Software Engineer",
-        "Data Analyst",
-        "Prompt Engineer",
-        "DevOps Engineer",
-        "Other"
+        "software engineer",
+        "senior software engineer",
+        "data analyst",
+        "prompt engineer",
+        "DevOps engineer",
+        "other"
     ]
 )
 
-if role == "Other":
-    role = st.text_input("Enter your job title", " ")
+if role == "other":
+    role = st.text_input("Enter your job title", "XXXXXXX")
 
 # Model selection
 gen_model = st.selectbox(
-    "Choose Model",
+    "model",
     [
         "openai/gpt-oss-20b",
         "openai/gpt-oss-120b"
@@ -48,11 +48,11 @@ gen_model = st.selectbox(
 
 # Difficulty level
 level = st.selectbox(
-    "Difficulty Level",
+    "difficult level",
     [
-        "Beginner",
-        "Intermediate",
-        "Advanced"
+        "beginner",
+        "intermediate",
+        "advanced"
     ]
 )
 
@@ -60,23 +60,23 @@ level = st.selectbox(
 mode = st.radio(
     "Activity",
     [
-        "Generate Questions",
-        "Generate Code Questions",
-        "Evaluate Answer",
-        "Improve Answers"
+        "generate questions",
+        "generate code questions",
+        "evaluate answer",
+        "improve answers"
     ]
 )
 
 # Generate questions
-if mode == "Generate Questions":
+if mode == "generate questions":
 
     count = st.slider(
-        "Number of Questions",
+        "Number of questions",
         1, 10, 5
     )
 
-# Generate coding questions
-elif mode == "Generate Code Questions":
+# Generate code questions
+elif mode == "generate code questions":
 
     topic = st.selectbox(
         "Topics",
@@ -85,15 +85,15 @@ elif mode == "Generate Code Questions":
             "AIML",
             "Python",
             "DSA",
-            "C++/C",
+            "c++/c",
             "Java",
-            "Cyber Security",
+            "cyber security",
             "ML"
         ]
     )
 
     count = st.slider(
-        "Number of Questions",
+        "Number of questions",
         1, 10, 5
     )
 
@@ -101,11 +101,11 @@ elif mode == "Generate Code Questions":
 else:
 
     question = st.text_area(
-        "Enter Interview Question Here"
+        "Enter interview question here"
     )
 
     answer = st.text_area(
-        "Enter Your Answer",
+        "Enter your answer",
         height=160
     )
 
@@ -115,7 +115,7 @@ if st.button("Generate AI Response", type="primary"):
     if not role.strip():
         st.warning("Please enter a valid job title.")
 
-    elif mode in ["Evaluate Answer", "Improve Answers"] and (
+    elif mode in ["evaluate answer", "improve answers"] and (
         not question.strip() or not answer.strip()
     ):
         st.warning("Please enter a valid question and answer.")
@@ -124,12 +124,12 @@ if st.button("Generate AI Response", type="primary"):
 
         # Background information
         background = (
-            "Job Role: " + role +
-            "\nDifficulty Level: " + level
+            "Job role: " + role +
+            "\nDifficulty level: " + level
         )
 
-        # Create task
-        if mode == "Generate Questions":
+        # Generate task
+        if mode == "generate questions":
 
             task = (
                 "Generate " + str(count) +
@@ -138,16 +138,16 @@ if st.button("Generate AI Response", type="primary"):
                 "Do not give answers. Give hints."
             )
 
-        elif mode == "Generate Code Questions":
+        elif mode == "generate code questions":
 
             task = (
                 "Generate " + str(count) +
                 " frequently asked coding questions on " +
                 topic +
-                ". Questions can be related to this topic."
+                ". Anything can be related to this topic."
             )
 
-        elif mode == "Evaluate Answer":
+        elif mode == "evaluate answer":
 
             task = (
                 "Question: " + question +
@@ -157,7 +157,7 @@ if st.button("Generate AI Response", type="primary"):
                 "Give each rating out of 5 in a list."
             )
 
-        elif mode == "Improve Answers":
+        elif mode == "improve answers":
 
             task = (
                 "Question: " + question +
@@ -167,7 +167,7 @@ if st.button("Generate AI Response", type="primary"):
                 "Do not invent anything about the candidate."
             )
 
-        # Groq AI response
+        # Groq API response
         with st.spinner("Generating your answer..."):
 
             try:
@@ -191,22 +191,29 @@ if st.button("Generate AI Response", type="primary"):
                     max_tokens=2000
                 )
 
-                # Display response
-                st.subheader("AI Interview Response")
+                # Display output
+                output = response.choices[0].message.content
 
-                ai_answer = response.choices[0].message.content
-
-                st.write(ai_answer)
+                st.subheader("AI Response")
+                st.markdown(output)
 
                 # Download response
                 st.download_button(
-                    "Download Answer",
-                    data=ai_answer,
-                    file_name="AI_Interview_Response.txt",
+                    "Download response",
+                    output,
+                    file_name="Interview_Response.txt",
                     mime="text/plain"
                 )
 
             except Exception as e:
 
-                st.error("Something went wrong!")
-                st.exception(e)
+                st.error(
+                    f"API connection was unsuccessful: {e}"
+                )
+
+                st.info(
+                    "Please check your API key and rate limits."
+                )
+
+# Footer
+st.caption("Powered by Streamlit.io and GitHub using LLM API")
