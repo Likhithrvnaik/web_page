@@ -1,19 +1,17 @@
+
 import streamlit as st
+from groq import Groq
+
 # Page configuration
 st.set_page_config(
     page_title="LLM",
     layout="centered"
 )
+
 # Application title
 st.title("AI Interview")
 st.caption("Practice and Prepare for your placement")
-# Import Groq safely
-try:
-    from groq import Groq
-except ImportError:
-    st.error("Groq package is not installed.")
-    st.info("Add groq to your requirements.txt file and redeploy.")
-    st.stop()
+
 # API configuration
 try:
     client = Groq(
@@ -22,39 +20,174 @@ try:
 except (KeyError, FileNotFoundError):
     st.error("API key is missing. Add it in Streamlit Secrets.")
     st.stop()
-# Success message
+
 st.success("Groq API connected successfully!")
 
 st.write("Welcome to your AI Interview Assistant.")
-role =st.selectbox("Job Title", ["Machine Learning Engineer", "Senior Software Engineering","data analysis","cyber security","software develovper","Others"])
 
-if role =="Others":
-    st.text_input("Enter your Job Title","XXXXXX")
-model = st.selectbox(
-    "choose your model",
-[
-"openai/gpt-oss-120b"
-"openai/gpt-oss-20b"
-]
-)
-level = st.selectbox(
-    "choose your level",
+# Job role
+role = st.selectbox(
+    "Job Title",
     [
-        "begginer","intermideate","advanced"
+        "Machine Learning Engineer",
+        "Senior Software Engineering",
+        "Data Analysis",
+        "Cyber Security",
+        "Software Developer",
+        "Others"
     ]
 )
-mode= st.radio("Activity",["Generate Questions","Generate Code Questions","Evaluate Answers","Improve answers"])
-if mode =="Generate Question" :
-    count = st.slider("Number Of Questions",1,10,5)
-elif mode =="Generate code Questions" :
-    topic = st.selectbox( "Select Topic",
-                         [ "Python", "C++", "C", "DSA", "Aptitude","Java"])
-    count= st.slider("Number of Questions",1,10,5)
+
+if role == "Others":
+    role = st.text_input("Enter your Job Title", "")
+
+# Model selection
+model = st.selectbox(
+    "Choose your model",
+    [
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b"
+    ]
+)
+
+# Experience level
+level = st.selectbox(
+    "Choose your level",
+    ["Beginner", "Intermediate", "Advanced"]
+)
+
+# Activity selection
+mode = st.radio(
+    "Activity",
+    [
+        "Generate Questions",
+        "Generate Code Questions",
+        "Evaluate Answers",
+        "Improve Answers"
+    ]
+)
+
+# Input based on activity
+if mode == "Generate Questions":
+
+    count = st.slider("Number of Questions", 1, 10, 5)
+
+elif mode == "Generate Code Questions":
+
+    topic = st.selectbox(
+        "Select Topic",
+        ["Python", "C++", "C", "DSA", "Aptitude", "Java"]
+    )
+
+    count = st.slider("Number of Questions", 1, 10, 5)
+
 else:
+
     question = st.text_area("Enter Interview Question Here")
-    answer = st.text_area("Enter Your Answer", height=160)
-    
-    if st.button("Generate AI Response",type = "primary"):
-        if mode == ["Evaluate Answer","Improve Answer"] and (not question.strip()):
-       st.warning("please enter a valid Question and Answer")
+
+    answer = st.text_area(
+        "Enter Your Answer",
+        height=160
+    )
+
+# Generate AI response
+if st.button("Generate AI Response", type="primary"):
+
+    if not role.strip():
+        st.warning("Please enter a valid job title.")
         st.stop()
+
+    # Generate prompt
+    if mode == "Generate Questions":
+
+        prompt = f"""
+        Generate {count} interview questions for the role
+        of {role}.
+
+        Experience Level: {level}
+
+        Provide clear and relevant interview questions.
+        """
+
+    elif mode == "Generate Code Questions":
+
+        prompt = f"""
+        Generate {count} coding interview questions.
+
+        Job Role: {role}
+        Topic: {topic}
+        Experience Level: {level}
+
+        Include coding problems and expected difficulty.
+        """
+
+    elif mode == "Evaluate Answers":
+
+        if not question.strip() or not answer.strip():
+            st.warning("Please enter both question and answer.")
+            st.stop()
+
+        prompt = f"""
+        Evaluate the following interview answer.
+
+        Job Role: {role}
+        Experience Level: {level}
+
+        Question: {question}
+
+        Candidate Answer: {answer}
+
+        Provide:
+        1. Score out of 10
+        2. Strengths
+        3. Weaknesses
+        4. Suggestions for improvement
+        """
+
+    else:
+
+        if not question.strip() or not answer.strip():
+            st.warning("Please enter both question and answer.")
+            st.stop()
+
+        prompt = f"""
+        Improve the following interview answer.
+
+        Job Role: {role}
+        Experience Level: {level}
+
+        Question: {question}
+
+        Original Answer: {answer}
+
+        Provide a professional, clear and technically
+        accurate improved answer.
+        """
+
+    # Call Groq API
+    try:
+        with st.spinner("Generating AI response..."):
+
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert technical interview assistant."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.7
+            )
+
+            result = response.choices[0].message.content
+
+        st.subheader("AI Interview Response")
+        st.markdown(result)
+
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
+
